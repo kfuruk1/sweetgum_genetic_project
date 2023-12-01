@@ -1,0 +1,580 @@
+---
+title: "Sweetgum Genetic Study"
+
+knit: (function(input_file, encoding) {
+    out_dir <- 'docs';
+    rmarkdown::render(input_file,
+      encoding = encoding,
+      output_file=file.path(dirname(input_file), out_dir, 'index.html'))})
+
+author: "Andrea De Stefano"
+date: "2023-12-01"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# General info {.tabset}
+
+I created this website to track the progress with the sweetgum genetic study.
+
+There are 7 parts:
+
+1. Libraries, dataset loading, and data wrangling.
+2. SAS code.
+3. Survival rate plots.
+4. Groundline diameter (GLD) plots and stats.
+5. Tree height plots and stats.
+6. DBH plots and stats.
+7. Live crown height plots and stats.
+
+## Data Wrangling {.tabset}
+
+```{r, echo = TRUE}
+
+library(tidyverse)
+library(ggpubr)
+
+sweetgum_genetic1 <- read.csv("https://raw.githubusercontent.com/azd169/R-datasets/main/sweetgum_genetic.csv",
+                              header = T)
+
+sweetgum_genetic <- sweetgum_genetic1 %>%
+  dplyr::mutate_if(is.integer, as.numeric) %>%
+  dplyr::mutate_if(is.character, as.factor) %>%
+  dplyr::mutate(Location = recode_factor(Location,
+                                         "LA_Tech" = "LA Tech",
+                                         "Hill_Farm" = "Hill Farm")) %>%
+  dplyr::mutate(Year = recode_factor(Year,
+                                     "Year_0" = "Initial",
+                                     "Year_1" = "First",
+                                     "Year_2" = "Second",
+                                     "Year_3" = "Third",
+                                     "Year_4" = "Fourth",
+                                     "Year_5" = "Fifth",
+                                     "Year_6" = "Sixth",
+                                     "Year_7" = "Seventh"))
+
+# Robert's dataset for his thesis
+
+hane_gld <- sweetgum_genetic %>%
+  subset(Year %in% c("Initial", "First", "Second")) %>% 
+  subset(Border %in% c("0")) %>% #
+  dplyr::group_by(Year, Location, Family, Block) %>%
+  dplyr::summarize(GLD = mean(GLD, na.rm = T)) %>%
+  dplyr::mutate(GLB = paste(Family, Location, Block, sep = "_")) 
+
+hane_dbh <- sweetgum_genetic %>%
+  subset(Year %in% c("Third", "Fourth", "Fifth", "Sixth", "Seventh")) %>% 
+  subset(Border %in% c("0")) %>% #
+  dplyr::group_by(Year, Location, Family, Block) %>%
+  dplyr::summarize(DBH = mean(DBH, na.rm = T)) %>%
+  dplyr::mutate(GLB = paste(Family, Location, Block, sep = "_"))
+
+hane_crown <- sweetgum_genetic %>%
+  subset(Year %in% c("Fifth", "Sixth", "Seventh")) %>% 
+  subset(Border %in% c("0")) %>% #
+  dplyr::group_by(Year, Location, Family, Block) %>%
+  dplyr::summarize(Crown = mean(Crown_height, na.rm = T)) %>%
+  dplyr::mutate(GLB = paste(Family, Location, Block, sep = "_"))
+
+hane_ht <- sweetgum_genetic %>%
+  dplyr::select(-c(GLD, DBH, Crown_height, Survival)) %>%
+  subset(Border %in% c("0")) %>%
+  group_by(Year, Location, Family, Block) %>%
+  summarize(Height = mean(Height, na.rm = T)) %>%
+  mutate(GLB = paste(Family, Location, Block, sep = "_")) %>%
+  mutate(Year = as.factor(Year),
+         Location = as.factor(Location),
+         Family = as.factor(Family),
+         GLB = as.factor(GLB))
+
+hane_survival_year <- sweetgum_genetic %>%
+  subset(Year %in% c("Initial", "First", "Second")) %>% 
+  subset(Border %in% c("0")) %>%
+  group_by(Year, Survival) %>%
+  summarise(n = n()) %>%
+  mutate(Rate = (n / sum(n))*100) 
+
+hane_survival_year_location <- sweetgum_genetic %>%
+  subset(Year %in% c("Initial", "First", "Second")) %>% 
+  subset(Border %in% c("0")) %>%
+  group_by(Year, Location, Survival) %>%
+  summarise(n = n()) %>%
+  mutate(Rate = (n / sum(n))*100) 
+  
+hane_survival_year_family <- sweetgum_genetic %>%
+  subset(Year %in% c("Initial", "First", "Second")) %>% 
+  subset(Border %in% c("0")) %>%  
+  group_by(Year, Family, Survival) %>%
+  summarise(n = n()) %>%
+  mutate(Rate = (n / sum(n))*100) 
+
+hane_survival_year_location_family <- sweetgum_genetic %>%
+  subset(Year %in% c("Initial", "First", "Second")) %>% 
+  subset(Border %in% c("0")) %>%  
+  group_by(Year, Location, Family, Survival) %>%
+  summarise(n = n()) %>%
+  mutate(Rate = (n / sum(n))*100) 
+
+```
+
+## SAS Code {.tabset}
+
+Procedure:
+
+External trees were removed from the analysis and all the Variables were averaged at plot level.
+A unique ID was created combining Genotype, Location, and Block (GLD in the SAS code)
+
+Datasets used:
+
+1. WORK.DBH for DBH
+2. WORK.GLD for GLD
+3. WORK.HEIGHT for tree height
+4. WORK.CROWN for crown height
+
+Here are the SAS models:
+
+1. GLD
+
+PROC GLIMMIX DATA = GLD H PLOTS = ALL;
+CLASS Year Location Block Family GLB;
+MODEL GLD = Year|Location|Family / SOLUTION DDFM = KR;
+RANDOM intercept / SOLUTION SUBJECT = GLB TYPE = AR(1) CL;
+LSMEANS Location Family Year * Location Year * Family/ ADJUST = TUKEY LINES;
+ODS GRAPHICS OFF;
+RUN;
+
+2. Height
+
+PROC GLIMMIX DATA = HEIGHT H PLOTS = ALL;
+CLASS Year Location Block Family GLB;
+MODEL Height = Year|Location|Family / SOLUTION DDFM = KR;
+RANDOM intercept / SOLUTION SUBJECT = GLB TYPE = AR(1) CL;
+LSMEANS Family/ ADJUST = TUKEY LINES;
+SLICE Year * Location / SLICEBY = Year ADJUST = TUKEY LINES DIFF;
+SLICE Year * Family / SLICEBY = Year ADJUST = TUKEY LINES DIFF;
+ODS GRAPHICS OFF;
+RUN;
+
+3. DBH
+
+PROC GLIMMIX DATA = DBH H PLOTS = ALL;
+CLASS Year Location Block Family GLB;
+MODEL DBH = Year|Location|Family / SOLUTION DDFM = KR;
+RANDOM intercept / SOLUTION SUBJECT = GLB TYPE = AR(1) CL;
+LSMEANS Family/ ADJUST = TUKEY LINES;
+SLICE Year * Location / SLICEBY = Year ADJUST = TUKEY LINES DIFF;
+SLICE Year * Family / SLICEBY = Year ADJUST = TUKEY LINES DIFF;
+ODS GRAPHICS OFF;
+RUN;
+
+4. Crown Height
+
+PROC GLIMMIX DATA = CROWN H PLOTS = ALL;
+CLASS Year Location Block Family GLB;
+MODEL CROWN = Year|Location|Family / SOLUTION DDFM = KR;
+RANDOM intercept / SOLUTION SUBJECT = GLB TYPE = AR(1) CL;
+LSMEANS Family/ ADJUST = TUKEY LINES;
+SLICE Year * Location / SLICEBY = Year ADJUST = TUKEY LINES DIFF;
+SLICE Year * Family / SLICEBY = Year ADJUST = TUKEY LINES DIFF;
+ODS GRAPHICS OFF;
+RUN;
+
+## Survival rates {.tabset}
+
+```{r, echo = TRUE}
+
+Sur1 <- ggplot(hane_survival_year,
+               aes(x = Survival, y = Rate, fill = Survival)) +
+  stat_summary(fun = mean, geom = "bar", position = "dodge") +
+  font("title", size = 22) +
+  font("xlab", size = 18) +
+  font("ylab", size = 18) +
+  font("xy.text", size = 16) +
+  scale_y_continuous(limits = c(0, 100), breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100), expand = c(0,0)) +
+  scale_fill_manual(values = alpha(c("green4", "red3"), 0.5)) +
+  labs(title = "Survival Rate by Year") +
+  xlab("") +
+  ylab("Survival rate (%)") +
+  facet_wrap( ~ Year) +
+  guides(fill = "none") +
+  theme_classic()
+
+Sur1
+
+Sur2 <- ggplot(hane_survival_year_family,
+               aes(x = Family, y = Rate, fill = Survival)) +
+  stat_summary(fun = mean, geom = "bar", position = "dodge") +
+  font("title", size = 22) +
+  font("xlab", size = 18) +
+  font("ylab", size = 18) +
+  font("xy.text", size = 16) +
+  scale_y_continuous(limits = c(0, 100), breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100), expand = c(0,0)) +
+  scale_fill_manual(values = alpha(c("green4", "red3"), 0.5)) +
+  labs(title = "Survival Rate by Year and Family") +
+  xlab("") +
+  ylab("Survival rate (%)") +
+  facet_wrap( ~ Year) +
+  theme_classic()
+
+Sur2
+
+Sur3 <- ggplot(hane_survival_year_location,
+               aes(x = Location, y = Rate, fill = Survival)) +
+  stat_summary(fun = mean, geom = "bar", position = "dodge") +
+  font("title", size = 22) +
+  font("xlab", size = 18) +
+  font("ylab", size = 18) +
+  font("xy.text", size = 16) +
+  scale_y_continuous(limits = c(0, 100), breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100), expand = c(0,0)) +
+  scale_fill_manual(values = alpha(c("green4", "red3"), 0.5)) +
+  labs(title = "Survival Rate by Year and Location") +
+  xlab("") +
+  ylab("Survival rate (%)") +
+  facet_wrap( ~ Year) +
+  theme_classic()
+
+Sur3
+
+Sur4 <- ggplot(hane_survival_year_location_family,
+               aes(x = Family, y = Rate, fill = Survival)) +
+  stat_summary(fun = mean, geom = "bar", position = "dodge") +
+  font("title", size = 22) +
+  font("xlab", size = 18) +
+  font("ylab", size = 18) +
+  font("xy.text", size = 16) +
+  scale_y_continuous(limits = c(0, 100), breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100), expand = c(0,0)) +
+  scale_fill_manual(values = alpha(c("green4", "red3"), 0.5)) +
+  labs(title = "Survival Rate by Year, Location, and Family") +
+  xlab("") +
+  ylab("Survival rate (%)") +
+  facet_wrap( ~ Year + Location, ncol = 2) +
+  theme_classic()
+
+Sur4
+
+```
+
+## GLD {.tabset}
+
+```{r, echo = TRUE}
+
+Fig1 <- ggplot(hane_gld,
+                 aes(x = Family, y = GLD, fill = Family)) +
+  stat_summary(fun.data = mean_sd, geom = "errorbar", width = 0.2, color = "grey") +
+  stat_summary(fun = mean, geom = "bar") +
+  font("title", size = 22) +
+  font("xlab", size = 18) +
+  font("ylab", size = 18) +
+  font("xy.text", size = 16) +
+  scale_y_continuous(limits = c(0, 60), breaks = c(0, 10, 20, 30, 40, 50, 60), expand = c(0,0)) +
+  scale_fill_manual(values = alpha(c("#E69F00", "#56B4E9", "#009E73",
+                                     "#F0E442", "#D55E00", "#CC79A7"), 0.5)) +
+  labs(title = "GLD: Family Effect") +
+  xlab("Family") +
+  ylab("GLD (mm)") +
+  annotate("text",
+           x = c(1, 2, 3, 4, 5, 6),
+           y = c(50),
+           label = c("b", "ab", "a", "a", "ab", "ab")) +
+  theme_classic()
+
+Fig1
+
+Fig2 <- ggplot(hane_gld,
+               aes(x = Year, y = GLD, fill = Location)) +
+  stat_summary(fun.data = mean_sd, geom = "errorbar", position = position_dodge(0.9), width = 0.2, color = "grey") +
+  stat_summary(fun = mean, geom = "bar", position = "dodge") +
+  font("title", size = 22) +
+  font("xlab", size = 18) +
+  font("ylab", size = 18) +
+  font("xy.text", size = 16) +
+  scale_y_continuous(limits = c(0, 70), breaks = c(0, 10, 20, 30, 40, 50, 60, 70), expand = c(0,0)) +
+  scale_fill_manual(values = alpha(c("#000000", "#999999"), 0.5)) +
+  labs(title = "GLD: Year * Location") +
+  xlab("Growing Season") +
+  ylab("GLD (mm)") +
+  annotate("text",
+           x = c(1.78, 2.22, 2.78, 3.22),
+           y = c(20, 20, 55, 50),
+           label = c("b", "a", "a", "b")) +
+  theme_classic()
+
+Fig2
+
+Fig3 <- ggplot(hane_gld,
+               aes(x = Year, y = GLD, fill = Family)) +
+  stat_summary(fun.data = mean_sd, geom = "errorbar", position = position_dodge(0.9), width = 0.2, color = "grey") +
+  stat_summary(fun = mean, geom = "bar", position = "dodge") +
+  font("title", size = 22) +
+  font("xlab", size = 18) +
+  font("ylab", size = 18) +
+  font("xy.text", size = 16) +
+  scale_y_continuous(limits = c(0, 80), breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 80), expand = c(0,0)) +
+  scale_fill_manual(values = alpha(c("#E69F00", "#56B4E9", "#009E73",
+                               "#F0E442", "#D55E00", "#CC79A7"), 0.5)) +
+  labs(title = "GLD: Year * Family") +
+  xlab("Growing Season") +
+  ylab("GLD (mm)") +
+  annotate("text",
+           x = c(2.62, 2.78, 2.93, 3.08, 3.22, 3.38),
+           y = c(45, 50, 55, 60, 55, 55),
+           label = c("b", "b", "a", "a", "a", "a")) +
+  theme_classic()
+
+Fig3
+
+```
+
+## Height {.tabset}
+
+```{r, echo = TRUE}
+
+Fig4 <- ggplot(hane_ht,
+               aes(x = Family, y = Height, fill = Family)) +
+  stat_summary(fun.data = mean_sd, geom = "errorbar", width = 0.2, color = "grey") +
+  stat_summary(fun = mean, geom = "bar") +
+  font("title", size = 22) +
+  font("xlab", size = 18) +
+  font("ylab", size = 18) +
+  font("xy.text", size = 16) +
+  scale_y_continuous(limits = c(0, 12), breaks = c(0, 2, 4, 6, 8, 10, 12), expand = c(0,0)) +
+  scale_fill_manual(values = alpha(c("#E69F00", "#56B4E9", "#009E73",
+                                     "#F0E442", "#D55E00", "#CC79A7"), 0.5)) +
+  labs(title = "Height: Year * Location") +
+  xlab("Family") +
+  ylab("Height (m)") +
+  annotate("text",
+           x = c(1, 2, 3, 4, 5, 6),
+           y = c(10),
+           label = c("d", "cd", "a", "a", "bc", "ab")) +
+  theme_classic()
+
+Fig4
+
+Fig5 <- ggplot(hane_ht,
+                  aes(x = Year, y = Height, fill = Location)) +
+  stat_summary(fun.data = mean_sd, geom = "errorbar", position = position_dodge(0.9), width = 0.2, color = "grey") +
+  stat_summary(fun = mean, geom = "bar", position = "dodge") +
+  font("title", size = 22) +
+  font("xlab", size = 18) +
+  font("ylab", size = 18) +
+  font("xy.text", size = 16) +
+  scale_y_continuous(limits = c(0, 12), breaks = c(0, 2, 4, 6, 8, 10, 12), expand = c(0,0)) +
+  scale_fill_manual(values = alpha(c("#000000", "#999999"), 0.5)) +
+  labs(title = "Height: Year * Location" ) +
+  xlab("Growing Season") +
+  ylab("Height (m)") +
+  annotate("text",
+           x = c(3.78, 4.22, 4.78, 5.22, 5.78, 6.22, 6.78, 7.22),
+           y = c(5, 4, 7, 5.5, 8.5, 7.5, 11, 7.5),
+           label = c("a", "b", "a", "b", "a", "b", "a", "b")) +
+  theme_classic()
+
+Fig5
+
+Fig6 <- ggplot(hane_ht,
+               aes(x = Year, y = Height, fill = Family)) +
+  stat_summary(fun.data = mean_sd, geom = "errorbar", position = position_dodge(0.9), width = 0.2, color = "grey") +
+  stat_summary(fun = mean, geom = "bar", position = "dodge") +
+  font("title", size = 22) +
+  font("xlab", size = 18) +
+  font("ylab", size = 18) +
+  font("xy.text", size = 16) +
+  scale_y_continuous(limits = c(0, 12), breaks = c(0, 2, 4, 6, 8, 10, 12), expand = c(0,0)) +
+  scale_fill_manual(values = alpha(c("#E69F00", "#56B4E9", "#009E73",
+                                     "#F0E442", "#D55E00", "#CC79A7"), 0.5)) +
+  labs(title = "Height: Year * Family") +
+  xlab("Growing Season") +
+  ylab("Height (m)") +
+  annotate("text",
+           x = c(2.63, 2.77, 2.92, 3.06, 3.22, 3.38,
+                 3.63, 3.77, 3.92, 4.06, 4.22, 4.38,
+                 4.63, 4.77, 4.92, 5.06, 5.22, 5.38,
+                 5.63, 5.77, 5.92, 6.06, 6.22, 6.38,
+                 6.63, 6.77, 6.92, 7.06, 7.22, 7.38,
+                 7.63, 7.77, 7.92, 8.06, 8.22, 8.38
+                 ),
+           y = c(2.2, 2.5, 3, 3.3, 2.7, 2.9,
+                 3.1, 3.3, 4.3, 4.5, 3.7, 3.9,
+                 5, 5.5, 6.5, 6.8, 5.9, 6.2,
+                 6.5, 7, 8.1, 8.4, 7.4, 7.8,
+                 7.7, 8.5, 10.4, 10.4, 9.8, 10.2,
+                 9.3, 9.2, 10.5, 10.4, 10, 10.3
+                 ),
+           label = c("c", "bc", "a", "a", "abc", "ab",
+                     "c", "bc", "a", "a", "bc", "ab",
+                     "d", "cd", "ab", "a", "bc", "ab",
+                     "c", "bc", "a", "a", "b", "a",
+                     "c", "c", "a", "a", "b", "ab",
+                     "dc", "d", "a", "a", "bc", "ab"
+                     )) +
+  theme_classic()
+
+Fig6
+
+```
+
+## DBH {.tabset}
+
+```{r, echo = TRUE}
+
+Fig7 <- ggplot(hane_dbh,
+               aes(x = Family, y = DBH, fill = Family)) +
+  stat_summary(fun.data = mean_sd, geom = "errorbar", width = 0.2, color = "grey") +
+  stat_summary(fun = mean, geom = "bar") +
+  font("title", size = 22) +
+  font("xlab", size = 18) +
+  font("ylab", size = 18) +
+  font("xy.text", size = 16) +
+  scale_y_continuous(limits = c(0, 20), breaks = c(0, 5, 10, 15, 20), expand = c(0,0)) +
+  scale_fill_manual(values = alpha(c("#E69F00", "#56B4E9", "#009E73",
+                                     "#F0E442", "#D55E00", "#CC79A7"), 0.5)) +
+  labs(title = "DBH: Family Effect") +
+  xlab("Family") +
+  ylab("DBH (cm)") +
+  annotate("text",
+           x = c(1, 2, 3, 4, 5, 6),
+           y = c(15),
+           label = c("d", "cd", "b", "b", "cb", "a")) +
+  theme_classic()
+
+Fig7
+
+Fig8 <- ggplot(hane_dbh,
+               aes(x = Year, y = DBH, fill = Location)) +
+  stat_summary(fun.data = mean_sd, geom = "errorbar", position = position_dodge(0.9), width = 0.2, color = "grey") +
+  stat_summary(fun = mean, geom = "bar", position = "dodge") +
+  font("title", size = 22) +
+  font("xlab", size = 18) +
+  font("ylab", size = 18) +
+  font("xy.text", size = 16) +
+  scale_y_continuous(limits = c(0, 20), breaks = c(0, 5, 10, 15, 20), expand = c(0,0)) +
+  scale_fill_manual(values = alpha(c("#000000", "#999999"), 0.5)) +
+  labs(title = "DBH: Year * Location" ) +
+  xlab("Growing Season") +
+  ylab("DBH (cm)") +
+  annotate("text",
+           x = c(0.78, 1.22, 1.78, 2.22, 2.78, 3.22, 3.78, 4.22, 4.78, 5.22),
+           y = c(5, 4, 8, 7, 11, 10, 13, 12, 14, 13),
+           label = c("a", "b", "a", "b", "a", "b", "a", "b", "a", "b")) +
+  theme_classic()
+
+Fig8
+
+Fig9 <- ggplot(hane_dbh,
+               aes(x = Year, y = DBH, fill = Family)) +
+  stat_summary(fun.data = mean_sd, geom = "errorbar", position = position_dodge(0.9), width = 0.2, color = "grey") +
+  stat_summary(fun = mean, geom = "bar", position = "dodge") +
+  font("title", size = 22) +
+  font("xlab", size = 18) +
+  font("ylab", size = 18) +
+  font("xy.text", size = 16) +
+  scale_y_continuous(limits = c(0, 20), breaks = c(0, 5, 10, 15, 20), expand = c(0,0)) +
+  scale_fill_manual(values = alpha(c("#E69F00", "#56B4E9", "#009E73",
+                                     "#F0E442", "#D55E00", "#CC79A7"), 0.5)) +
+  labs(title = "DBH: Year * Family") +
+  xlab("Growing Season") +
+  ylab("DBH (cm)") +
+  annotate("text",
+           x = c(0.63, 0.77, 0.92, 1.06, 1.22, 1.38,
+                 1.63, 1.77, 1.92, 2.06, 2.22, 2.38,
+                 2.63, 2.77, 2.92, 3.06, 3.22, 3.38,
+                 3.63, 3.77, 3.92, 4.06, 4.22, 4.38,
+                 4.63, 4.77, 4.92, 5.06, 5.22, 5.38
+           ),
+           y = c(3.2, 3.5, 5, 5.3, 4.7, 4.9,
+                 6.1, 6.3, 7.8, 7.9, 7.5, 8.5,
+                 8.9, 9.3, 10.1, 10.2, 10.8, 11.8,
+                 11.1, 11.3, 11.9, 12.3, 12.8, 13.2,
+                 12.7, 12.7, 12.9, 13.1, 13.5, 14.7
+           ),
+           label = c("c", "c", "ab", "a", "bc", "a",
+                     "d", "cd", "b", "b", "bc", "a",
+                     "c", "c", "b", "b", "b", "a",
+                     "d", "cd", "bcd", "bc", "b", "a",
+                     "b", "b", "b", "b", "b", "a"
+           )) +
+  theme_classic()
+
+Fig9
+
+```
+
+## Crown {.tabset}
+
+```{r, echo=TRUE}
+
+Fig10 <- ggplot(hane_crown,
+                aes(x = Family, y = Crown, fill = Family)) +
+  stat_summary(fun.data = mean_sd, geom = "errorbar", width = 0.2, color = "grey") +
+  stat_summary(fun = mean, geom = "bar") +
+  font("title", size = 22) +
+  font("xlab", size = 18) +
+  font("ylab", size = 18) +
+  font("xy.text", size = 16) +
+  scale_y_continuous(limits = c(0, 10), breaks = c(0, 2, 4, 6, 8, 10), expand = c(0,0)) +
+  scale_fill_manual(values = alpha(c("#E69F00", "#56B4E9", "#009E73",
+                                     "#F0E442", "#D55E00", "#CC79A7"), 0.5)) +
+  labs(title = "Crown Height: Family Effect") +
+  xlab("Family") +
+  ylab("Crown Height (m)") +
+  annotate("text",
+           x = c(1, 2, 3, 4, 5, 6),
+           y = c(8),
+           label = c("b", "b", "a", "a", "a", "a")) +
+  theme_classic()
+
+Fig10
+
+Fig11 <- ggplot(hane_crown,
+               aes(x = Year, y = Crown, fill = Location)) +
+  stat_summary(fun.data = mean_sd, geom = "errorbar", position = position_dodge(0.9), width = 0.2, color = "grey") +
+  stat_summary(fun = mean, geom = "bar", position = "dodge") +
+  font("title", size = 22) +
+  font("xlab", size = 18) +
+  font("ylab", size = 18) +
+  font("xy.text", size = 16) +
+  scale_y_continuous(limits = c(0, 10), breaks = c(0, 2, 4, 6, 8, 10), expand = c(0,0)) +
+  scale_fill_manual(values = alpha(c("#000000", "#999999"), 0.5)) +
+  labs(title = "Crown Height: Year * Location" ) +
+  xlab("Growing Season") +
+  ylab("Crown Height (m)") +
+  annotate("text",
+           x = c(0.78, 1.22, 1.78, 2.22, 2.78, 3.22),
+           y = c(3.2, 1.7, 6.5, 4, 7.3, 5),
+           label = c("a", "b", "a", "b", "a", "b")) +
+  theme_classic()
+
+Fig11
+
+Fig12 <- ggplot(hane_crown,
+               aes(x = Year, y = Crown, fill = Family)) +
+  stat_summary(fun.data = mean_sd, geom = "errorbar", position = position_dodge(0.9), width = 0.2, color = "grey") +
+  stat_summary(fun = mean, geom = "bar", position = "dodge") +
+  font("title", size = 22) +
+  font("xlab", size = 18) +
+  font("ylab", size = 18) +
+  font("xy.text", size = 16) +
+  scale_y_continuous(limits = c(0, 10), breaks = c(0, 2, 4, 6, 8, 10), expand = c(0,0)) +
+  scale_fill_manual(values = alpha(c("#E69F00", "#56B4E9", "#009E73",
+                                     "#F0E442", "#D55E00", "#CC79A7"), 0.5)) +
+  labs(title = "Crown Height: Year * Family") +
+  xlab("Growing Season") +
+  ylab("Crown Height (m)") +
+  annotate("text",
+           x = c(1.63, 1.77, 1.92, 2.06, 2.22, 2.36,
+                 2.63, 2.77, 2.92, 3.06, 3.22, 3.36
+           ),
+           y = c(2.5, 3.4, 6, 6.5, 5.5, 5.7,
+                 4, 3.9, 7.2, 7.3, 6.1, 6.6
+           ),
+           label = c("b", "b", "a", "a", "a", "a",
+                     "b", "b", "a", "a", "a", "a"
+           )) +
+  theme_classic()
+
+Fig12
+
+```
