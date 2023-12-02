@@ -12,8 +12,8 @@ date: "2023-12-01"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.width = 10, fig.height = 8, fig.align = "left")
 ```
 # General info {.tabset}
 
@@ -35,6 +35,7 @@ There are 7 parts:
 
 library(tidyverse)
 library(ggpubr)
+library(plotly)
 
 sweetgum_genetic1 <- read.csv("https://raw.githubusercontent.com/azd169/R-datasets/main/sweetgum_genetic.csv",
                               header = T)
@@ -53,7 +54,8 @@ sweetgum_genetic <- sweetgum_genetic1 %>%
                                      "Year_4" = "Fourth",
                                      "Year_5" = "Fifth",
                                      "Year_6" = "Sixth",
-                                     "Year_7" = "Seventh"))
+                                     "Year_7" = "Seventh")) %>%
+  dplyr::mutate_if(is.numeric, round, 2)
 
 # Robert's dataset for his thesis
 
@@ -94,28 +96,32 @@ hane_survival_year <- sweetgum_genetic %>%
   subset(Border %in% c("0")) %>%
   group_by(Year, Survival) %>%
   summarise(n = n()) %>%
-  mutate(Rate = (n / sum(n))*100) 
+  mutate(Rate = (n / sum(n))*100) %>%
+  dplyr::mutate_if(is.numeric, round, 2)
 
 hane_survival_year_location <- sweetgum_genetic %>%
   subset(Year %in% c("Initial", "First", "Second")) %>% 
   subset(Border %in% c("0")) %>%
   group_by(Year, Location, Survival) %>%
   summarise(n = n()) %>%
-  mutate(Rate = (n / sum(n))*100) 
+  mutate(Rate = (n / sum(n))*100) %>%
+  dplyr::mutate_if(is.numeric, round, 2)
   
 hane_survival_year_family <- sweetgum_genetic %>%
   subset(Year %in% c("Initial", "First", "Second")) %>% 
   subset(Border %in% c("0")) %>%  
   group_by(Year, Family, Survival) %>%
   summarise(n = n()) %>%
-  mutate(Rate = (n / sum(n))*100) 
+  mutate(Rate = (n / sum(n))*100) %>%
+  dplyr::mutate_if(is.numeric, round, 2)
 
 hane_survival_year_location_family <- sweetgum_genetic %>%
   subset(Year %in% c("Initial", "First", "Second")) %>% 
   subset(Border %in% c("0")) %>%  
   group_by(Year, Location, Family, Survival) %>%
   summarise(n = n()) %>%
-  mutate(Rate = (n / sum(n))*100) 
+  mutate(Rate = (n / sum(n))*100) %>%
+  dplyr::mutate_if(is.numeric, round, 2)
 
 ```
 
@@ -194,14 +200,14 @@ Sur1 <- ggplot(hane_survival_year,
   font("xy.text", size = 16) +
   scale_y_continuous(limits = c(0, 100), breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100), expand = c(0,0)) +
   scale_fill_manual(values = alpha(c("green4", "red3"), 0.5)) +
-  labs(title = "Survival Rate by Year") +
+  labs(title = "Survival Rate by Growing Season") +
   xlab("") +
   ylab("Survival rate (%)") +
   facet_wrap( ~ Year) +
-  guides(fill = "none") +
+  guides(fill = guide_legend()) +
   theme_classic()
 
-Sur1
+plotly::ggplotly(Sur1)
 
 Sur2 <- ggplot(hane_survival_year_family,
                aes(x = Family, y = Rate, fill = Survival)) +
@@ -212,13 +218,14 @@ Sur2 <- ggplot(hane_survival_year_family,
   font("xy.text", size = 16) +
   scale_y_continuous(limits = c(0, 100), breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100), expand = c(0,0)) +
   scale_fill_manual(values = alpha(c("green4", "red3"), 0.5)) +
-  labs(title = "Survival Rate by Year and Family") +
+  labs(title = "Survival Rate by Growing Season and Family") +
   xlab("") +
   ylab("Survival rate (%)") +
   facet_wrap( ~ Year) +
+  guides(fill = guide_legend()) +
   theme_classic()
 
-Sur2
+plotly::ggplotly(Sur2)
 
 Sur3 <- ggplot(hane_survival_year_location,
                aes(x = Location, y = Rate, fill = Survival)) +
@@ -229,13 +236,14 @@ Sur3 <- ggplot(hane_survival_year_location,
   font("xy.text", size = 16) +
   scale_y_continuous(limits = c(0, 100), breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100), expand = c(0,0)) +
   scale_fill_manual(values = alpha(c("green4", "red3"), 0.5)) +
-  labs(title = "Survival Rate by Year and Location") +
+  labs(title = "Survival Rate by Growing Season and Location") +
   xlab("") +
   ylab("Survival rate (%)") +
   facet_wrap( ~ Year) +
+  guides(fill = guide_legend()) +
   theme_classic()
 
-Sur3
+plotly::ggplotly(Sur3)
 
 Sur4 <- ggplot(hane_survival_year_location_family,
                aes(x = Family, y = Rate, fill = Survival)) +
@@ -246,13 +254,13 @@ Sur4 <- ggplot(hane_survival_year_location_family,
   font("xy.text", size = 16) +
   scale_y_continuous(limits = c(0, 100), breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100), expand = c(0,0)) +
   scale_fill_manual(values = alpha(c("green4", "red3"), 0.5)) +
-  labs(title = "Survival Rate by Year, Location, and Family") +
+  labs(title = "Survival Rate by Growing Season, Location, and Family") +
   xlab("") +
   ylab("Survival rate (%)") +
   facet_wrap( ~ Year + Location, ncol = 2) +
   theme_classic()
 
-Sur4
+plotly::ggplotly(Sur4)
 
 ```
 
@@ -280,7 +288,7 @@ Fig1 <- ggplot(hane_gld,
            label = c("b", "ab", "a", "a", "ab", "ab")) +
   theme_classic()
 
-Fig1
+plotly::ggplotly(Fig1)
 
 Fig2 <- ggplot(hane_gld,
                aes(x = Year, y = GLD, fill = Location)) +
@@ -301,7 +309,7 @@ Fig2 <- ggplot(hane_gld,
            label = c("b", "a", "a", "b")) +
   theme_classic()
 
-Fig2
+plotly::ggplotly(Fig2)
 
 Fig3 <- ggplot(hane_gld,
                aes(x = Year, y = GLD, fill = Family)) +
@@ -323,7 +331,7 @@ Fig3 <- ggplot(hane_gld,
            label = c("b", "b", "a", "a", "a", "a")) +
   theme_classic()
 
-Fig3
+plotly::ggplotly(Fig3)
 
 ```
 
@@ -351,7 +359,7 @@ Fig4 <- ggplot(hane_ht,
            label = c("d", "cd", "a", "a", "bc", "ab")) +
   theme_classic()
 
-Fig4
+plotly::ggplotly(Fig4)
 
 Fig5 <- ggplot(hane_ht,
                   aes(x = Year, y = Height, fill = Location)) +
@@ -372,7 +380,7 @@ Fig5 <- ggplot(hane_ht,
            label = c("a", "b", "a", "b", "a", "b", "a", "b")) +
   theme_classic()
 
-Fig5
+plotly::ggplotly(Fig5)
 
 Fig6 <- ggplot(hane_ht,
                aes(x = Year, y = Height, fill = Family)) +
@@ -412,7 +420,7 @@ Fig6 <- ggplot(hane_ht,
                      )) +
   theme_classic()
 
-Fig6
+plotly::ggplotly(Fig6)
 
 ```
 
@@ -440,7 +448,7 @@ Fig7 <- ggplot(hane_dbh,
            label = c("d", "cd", "b", "b", "cb", "a")) +
   theme_classic()
 
-Fig7
+plotly::ggplotly(Fig7)
 
 Fig8 <- ggplot(hane_dbh,
                aes(x = Year, y = DBH, fill = Location)) +
@@ -461,7 +469,7 @@ Fig8 <- ggplot(hane_dbh,
            label = c("a", "b", "a", "b", "a", "b", "a", "b", "a", "b")) +
   theme_classic()
 
-Fig8
+plotly::ggplotly(Fig8)
 
 Fig9 <- ggplot(hane_dbh,
                aes(x = Year, y = DBH, fill = Family)) +
@@ -498,13 +506,13 @@ Fig9 <- ggplot(hane_dbh,
            )) +
   theme_classic()
 
-Fig9
+plotly::ggplotly(Fig9)
 
 ```
 
 ## Crown {.tabset}
 
-```{r, echo=TRUE}
+```{r, echo = TRUE}
 
 Fig10 <- ggplot(hane_crown,
                 aes(x = Family, y = Crown, fill = Family)) +
@@ -526,7 +534,7 @@ Fig10 <- ggplot(hane_crown,
            label = c("b", "b", "a", "a", "a", "a")) +
   theme_classic()
 
-Fig10
+plotly::ggplotly(Fig10)
 
 Fig11 <- ggplot(hane_crown,
                aes(x = Year, y = Crown, fill = Location)) +
@@ -547,7 +555,7 @@ Fig11 <- ggplot(hane_crown,
            label = c("a", "b", "a", "b", "a", "b")) +
   theme_classic()
 
-Fig11
+plotly::ggplotly(Fig11)
 
 Fig12 <- ggplot(hane_crown,
                aes(x = Year, y = Crown, fill = Family)) +
@@ -575,6 +583,6 @@ Fig12 <- ggplot(hane_crown,
            )) +
   theme_classic()
 
-Fig12
+plotly::ggplotly(Fig12)
 
 ```
