@@ -36,6 +36,7 @@ There are 7 parts:
 library(tidyverse)
 library(ggpubr)
 library(plotly)
+library(htmltools)
 
 hane_crown <- read.csv("https://raw.githubusercontent.com/azd169/R-datasets/main/hane_crown.csv",
                        header = T)
@@ -143,6 +144,38 @@ SLICE Year * Location / SLICEBY = Year ADJUST = TUKEY LINES DIFF;
 SLICE Year * Family / SLICEBY = Year ADJUST = TUKEY LINES DIFF;
 ODS GRAPHICS OFF;
 RUN;
+
+## SAS Output GLD {.tabset}
+
+```{r, echo = TRUE}
+
+htmltools::includeHTML("https://raw.githubusercontent.com/azd169/SAS_outputs/main/hane-results-GLD.html")
+
+```
+
+## SAS Output DBH {.tabset}
+
+```{r, echo = TRUE}
+
+htmltools::includeHTML("https://raw.githubusercontent.com/azd169/SAS_outputs/main/hane-results-DBH.html")
+
+```
+
+## SAS Output Height {.tabset}
+
+```{r, echo = TRUE}
+
+htmltools::includeHTML("https://raw.githubusercontent.com/azd169/SAS_outputs/main/hane-results-height.html")
+
+```
+
+## SAS Output Crown {.tabset}
+
+```{r, echo = TRUE}
+
+htmltools::includeHTML("https://raw.githubusercontent.com/azd169/SAS_outputs/main/hane-results-crown.html")
+
+```
 
 ## Survival rates {.tabset}
 
