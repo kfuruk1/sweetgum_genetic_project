@@ -37,91 +37,48 @@ library(tidyverse)
 library(ggpubr)
 library(plotly)
 
-sweetgum_genetic1 <- read.csv("https://raw.githubusercontent.com/azd169/R-datasets/main/sweetgum_genetic.csv",
-                              header = T)
+hane_crown <- read.csv("https://raw.githubusercontent.com/azd169/R-datasets/main/hane_crown.csv",
+                       header = T)
+hane_gld <- read.csv("https://raw.githubusercontent.com/azd169/R-datasets/main/hane_gld.csv",
+                       header = T)
+hane_dbh <- read.csv("https://raw.githubusercontent.com/azd169/R-datasets/main/hane_dbh.csv",
+                       header = T)
+hane_ht <- read.csv("https://raw.githubusercontent.com/azd169/R-datasets/main/hane_ht.csv",
+                       header = T)
+hane_survival_year <- read.csv("https://raw.githubusercontent.com/azd169/R-datasets/main/hane_survival_year.csv",
+                       header = T)
+hane_survival_year_family <- read.csv("https://raw.githubusercontent.com/azd169/R-datasets/main/hane_survival_year_family.csv",
+                       header = T)
+hane_survival_year_location <- read.csv("https://raw.githubusercontent.com/azd169/R-datasets/main/hane_survival_year_location.csv",
+                       header = T)
+hane_survival_year_location_family <- read.csv("https://raw.githubusercontent.com/azd169/R-datasets/main/hane_survival_year_location_family.csv",
+                       header = T)
 
-sweetgum_genetic <- sweetgum_genetic1 %>%
-  dplyr::mutate_if(is.integer, as.numeric) %>%
-  dplyr::mutate_if(is.character, as.factor) %>%
-  dplyr::mutate(Location = recode_factor(Location,
-                                         "LA_Tech" = "LA Tech",
-                                         "Hill_Farm" = "Hill Farm")) %>%
-  dplyr::mutate(Year = recode_factor(Year,
-                                     "Year_0" = "Initial",
-                                     "Year_1" = "First",
-                                     "Year_2" = "Second",
-                                     "Year_3" = "Third",
-                                     "Year_4" = "Fourth",
-                                     "Year_5" = "Fifth",
-                                     "Year_6" = "Sixth",
-                                     "Year_7" = "Seventh")) %>%
-  dplyr::mutate_if(is.numeric, round, 2)
+hane_crown <- hane_crown %>%
+  mutate(Year = fct_relevel(Year, c("Fifth", "Sixth", "Seventh")))
 
-# Robert's dataset for his thesis
+hane_gld <- hane_gld %>%
+  mutate(Year = fct_relevel(Year, c("Initial", "First", "Second")))
 
-hane_gld <- sweetgum_genetic %>%
-  subset(Year %in% c("Initial", "First", "Second")) %>% 
-  subset(Border %in% c("0")) %>% #
-  dplyr::group_by(Year, Location, Family, Block) %>%
-  dplyr::summarize(GLD = mean(GLD, na.rm = T)) %>%
-  dplyr::mutate(GLB = paste(Family, Location, Block, sep = "_")) 
+hane_dbh <- hane_dbh %>%
+  mutate(Year = fct_relevel(Year, c("Third", "Fourth", "Fifth", "Sixth", "Seventh")))
 
-hane_dbh <- sweetgum_genetic %>%
-  subset(Year %in% c("Third", "Fourth", "Fifth", "Sixth", "Seventh")) %>% 
-  subset(Border %in% c("0")) %>% #
-  dplyr::group_by(Year, Location, Family, Block) %>%
-  dplyr::summarize(DBH = mean(DBH, na.rm = T)) %>%
-  dplyr::mutate(GLB = paste(Family, Location, Block, sep = "_"))
+hane_ht <- hane_ht %>%
+  mutate(Year = fct_relevel(Year, c("Initial", "First", "Second", "Third", "Fourth", "Fifth", "Sixth", "Seventh")))
 
-hane_crown <- sweetgum_genetic %>%
-  subset(Year %in% c("Fifth", "Sixth", "Seventh")) %>% 
-  subset(Border %in% c("0")) %>% #
-  dplyr::group_by(Year, Location, Family, Block) %>%
-  dplyr::summarize(Crown = mean(Crown_height, na.rm = T)) %>%
-  dplyr::mutate(GLB = paste(Family, Location, Block, sep = "_"))
+hane_survival_year <- hane_survival_year %>%
+  mutate(Year = fct_relevel(Year, c("Initial", "First", "Second")))
 
-hane_ht <- sweetgum_genetic %>%
-  dplyr::select(-c(GLD, DBH, Crown_height, Survival)) %>%
-  subset(Border %in% c("0")) %>%
-  group_by(Year, Location, Family, Block) %>%
-  summarize(Height = mean(Height, na.rm = T)) %>%
-  mutate(GLB = paste(Family, Location, Block, sep = "_")) %>%
-  mutate(Year = as.factor(Year),
-         Location = as.factor(Location),
-         Family = as.factor(Family),
-         GLB = as.factor(GLB))
+hane_survival_year_family <- hane_survival_year_family %>%
+  mutate(Year = fct_relevel(Year, c("Initial", "First", "Second")))
 
-hane_survival_year <- sweetgum_genetic %>%
-  subset(Year %in% c("Initial", "First", "Second")) %>% 
-  subset(Border %in% c("0")) %>%
-  group_by(Year, Survival) %>%
-  summarise(n = n()) %>%
-  mutate(Rate = (n / sum(n))*100) %>%
-  dplyr::mutate_if(is.numeric, round, 2)
+hane_survival_year_location <- hane_survival_year_location %>%
+  mutate(Year = fct_relevel(Year, c("Initial", "First", "Second")))
 
-hane_survival_year_location <- sweetgum_genetic %>%
-  subset(Year %in% c("Initial", "First", "Second")) %>% 
-  subset(Border %in% c("0")) %>%
-  group_by(Year, Location, Survival) %>%
-  summarise(n = n()) %>%
-  mutate(Rate = (n / sum(n))*100) %>%
-  dplyr::mutate_if(is.numeric, round, 2)
-  
-hane_survival_year_family <- sweetgum_genetic %>%
-  subset(Year %in% c("Initial", "First", "Second")) %>% 
-  subset(Border %in% c("0")) %>%  
-  group_by(Year, Family, Survival) %>%
-  summarise(n = n()) %>%
-  mutate(Rate = (n / sum(n))*100) %>%
-  dplyr::mutate_if(is.numeric, round, 2)
-
-hane_survival_year_location_family <- sweetgum_genetic %>%
-  subset(Year %in% c("Initial", "First", "Second")) %>% 
-  subset(Border %in% c("0")) %>%  
-  group_by(Year, Location, Family, Survival) %>%
-  summarise(n = n()) %>%
-  mutate(Rate = (n / sum(n))*100) %>%
-  dplyr::mutate_if(is.numeric, round, 2)
+hane_survival_year_location_family <- hane_survival_year_location_family %>%
+  dplyr::mutate(ID = paste(Location, Year, sep = ", ")) %>%
+  mutate(ID = fct_relevel(ID, c("Hill Farm, Initial", "Hill Farm, First", "Hill Farm, Second",
+                                "LA Tech, Initial", "LA Tech, First", "LA Tech, Second")))
 
 ```
 
@@ -192,7 +149,7 @@ RUN;
 ```{r, echo = TRUE}
 
 Sur1 <- ggplot(hane_survival_year,
-               aes(x = Survival, y = Rate, fill = Survival)) +
+               aes(x = Survival, y = Rate, fill = Survival, Color = Survival)) +
   stat_summary(fun = mean, geom = "bar", position = "dodge") +
   font("title", size = 22) +
   font("xlab", size = 18) +
@@ -204,13 +161,13 @@ Sur1 <- ggplot(hane_survival_year,
   xlab("") +
   ylab("Survival rate (%)") +
   facet_wrap( ~ Year) +
-  guides(fill = guide_legend()) +
+  guides(fill = "none") +
   theme_classic()
 
 plotly::ggplotly(Sur1)
 
 Sur2 <- ggplot(hane_survival_year_family,
-               aes(x = Family, y = Rate, fill = Survival)) +
+               aes(x = Family, y = Rate, fill = Survival, color = Survival)) +
   stat_summary(fun = mean, geom = "bar", position = "dodge") +
   font("title", size = 22) +
   font("xlab", size = 18) +
@@ -222,13 +179,13 @@ Sur2 <- ggplot(hane_survival_year_family,
   xlab("") +
   ylab("Survival rate (%)") +
   facet_wrap( ~ Year) +
-  guides(fill = guide_legend()) +
+  guides(fill = "none") +
   theme_classic()
 
 plotly::ggplotly(Sur2)
 
 Sur3 <- ggplot(hane_survival_year_location,
-               aes(x = Location, y = Rate, fill = Survival)) +
+               aes(x = Location, y = Rate, fill = Survival, Color = Survival)) +
   stat_summary(fun = mean, geom = "bar", position = "dodge") +
   font("title", size = 22) +
   font("xlab", size = 18) +
@@ -240,13 +197,13 @@ Sur3 <- ggplot(hane_survival_year_location,
   xlab("") +
   ylab("Survival rate (%)") +
   facet_wrap( ~ Year) +
-  guides(fill = guide_legend()) +
+  guides(fill = "none") +
   theme_classic()
 
 plotly::ggplotly(Sur3)
 
 Sur4 <- ggplot(hane_survival_year_location_family,
-               aes(x = Family, y = Rate, fill = Survival)) +
+               aes(x = Family, y = Rate, fill = Survival, color = Survival)) +
   stat_summary(fun = mean, geom = "bar", position = "dodge") +
   font("title", size = 22) +
   font("xlab", size = 18) +
@@ -257,7 +214,8 @@ Sur4 <- ggplot(hane_survival_year_location_family,
   labs(title = "Survival Rate by Growing Season, Location, and Family") +
   xlab("") +
   ylab("Survival rate (%)") +
-  facet_wrap( ~ Year + Location, ncol = 2) +
+  facet_wrap( ~ ID, ncol = 3) +
+  guides(fill = "none") +
   theme_classic()
 
 plotly::ggplotly(Sur4)
@@ -269,7 +227,7 @@ plotly::ggplotly(Sur4)
 ```{r, echo = TRUE}
 
 Fig1 <- ggplot(hane_gld,
-                 aes(x = Family, y = GLD, fill = Family)) +
+                 aes(x = Family, y = GLD, fill = Family, color = Family)) +
   stat_summary(fun.data = mean_sd, geom = "errorbar", width = 0.2, color = "grey") +
   stat_summary(fun = mean, geom = "bar") +
   font("title", size = 22) +
@@ -286,12 +244,13 @@ Fig1 <- ggplot(hane_gld,
            x = c(1, 2, 3, 4, 5, 6),
            y = c(50),
            label = c("b", "ab", "a", "a", "ab", "ab")) +
+  guides(fill = "none") +
   theme_classic()
 
 plotly::ggplotly(Fig1)
 
 Fig2 <- ggplot(hane_gld,
-               aes(x = Year, y = GLD, fill = Location)) +
+               aes(x = Year, y = GLD, fill = Location, color = Location)) +
   stat_summary(fun.data = mean_sd, geom = "errorbar", position = position_dodge(0.9), width = 0.2, color = "grey") +
   stat_summary(fun = mean, geom = "bar", position = "dodge") +
   font("title", size = 22) +
@@ -307,12 +266,13 @@ Fig2 <- ggplot(hane_gld,
            x = c(1.78, 2.22, 2.78, 3.22),
            y = c(20, 20, 55, 50),
            label = c("b", "a", "a", "b")) +
+  guides(fill = "none") +
   theme_classic()
 
 plotly::ggplotly(Fig2)
 
 Fig3 <- ggplot(hane_gld,
-               aes(x = Year, y = GLD, fill = Family)) +
+               aes(x = Year, y = GLD, fill = Family, color = Family)) +
   stat_summary(fun.data = mean_sd, geom = "errorbar", position = position_dodge(0.9), width = 0.2, color = "grey") +
   stat_summary(fun = mean, geom = "bar", position = "dodge") +
   font("title", size = 22) +
@@ -329,6 +289,7 @@ Fig3 <- ggplot(hane_gld,
            x = c(2.62, 2.78, 2.93, 3.08, 3.22, 3.38),
            y = c(45, 50, 55, 60, 55, 55),
            label = c("b", "b", "a", "a", "a", "a")) +
+  guides(fill = "none") +
   theme_classic()
 
 plotly::ggplotly(Fig3)
@@ -340,7 +301,7 @@ plotly::ggplotly(Fig3)
 ```{r, echo = TRUE}
 
 Fig4 <- ggplot(hane_ht,
-               aes(x = Family, y = Height, fill = Family)) +
+               aes(x = Family, y = Height, fill = Family, color = Family)) +
   stat_summary(fun.data = mean_sd, geom = "errorbar", width = 0.2, color = "grey") +
   stat_summary(fun = mean, geom = "bar") +
   font("title", size = 22) +
@@ -357,12 +318,13 @@ Fig4 <- ggplot(hane_ht,
            x = c(1, 2, 3, 4, 5, 6),
            y = c(10),
            label = c("d", "cd", "a", "a", "bc", "ab")) +
+  guides(fill = "none") +
   theme_classic()
 
 plotly::ggplotly(Fig4)
 
 Fig5 <- ggplot(hane_ht,
-                  aes(x = Year, y = Height, fill = Location)) +
+                  aes(x = Year, y = Height, fill = Location, color = Location)) +
   stat_summary(fun.data = mean_sd, geom = "errorbar", position = position_dodge(0.9), width = 0.2, color = "grey") +
   stat_summary(fun = mean, geom = "bar", position = "dodge") +
   font("title", size = 22) +
@@ -383,7 +345,7 @@ Fig5 <- ggplot(hane_ht,
 plotly::ggplotly(Fig5)
 
 Fig6 <- ggplot(hane_ht,
-               aes(x = Year, y = Height, fill = Family)) +
+               aes(x = Year, y = Height, fill = Family, color = Family)) +
   stat_summary(fun.data = mean_sd, geom = "errorbar", position = position_dodge(0.9), width = 0.2, color = "grey") +
   stat_summary(fun = mean, geom = "bar", position = "dodge") +
   font("title", size = 22) +
@@ -429,7 +391,7 @@ plotly::ggplotly(Fig6)
 ```{r, echo = TRUE}
 
 Fig7 <- ggplot(hane_dbh,
-               aes(x = Family, y = DBH, fill = Family)) +
+               aes(x = Family, y = DBH, fill = Family, color = Family)) +
   stat_summary(fun.data = mean_sd, geom = "errorbar", width = 0.2, color = "grey") +
   stat_summary(fun = mean, geom = "bar") +
   font("title", size = 22) +
@@ -451,7 +413,7 @@ Fig7 <- ggplot(hane_dbh,
 plotly::ggplotly(Fig7)
 
 Fig8 <- ggplot(hane_dbh,
-               aes(x = Year, y = DBH, fill = Location)) +
+               aes(x = Year, y = DBH, fill = Location, color = Location)) +
   stat_summary(fun.data = mean_sd, geom = "errorbar", position = position_dodge(0.9), width = 0.2, color = "grey") +
   stat_summary(fun = mean, geom = "bar", position = "dodge") +
   font("title", size = 22) +
@@ -467,12 +429,13 @@ Fig8 <- ggplot(hane_dbh,
            x = c(0.78, 1.22, 1.78, 2.22, 2.78, 3.22, 3.78, 4.22, 4.78, 5.22),
            y = c(5, 4, 8, 7, 11, 10, 13, 12, 14, 13),
            label = c("a", "b", "a", "b", "a", "b", "a", "b", "a", "b")) +
+  guides(fill = "none") +
   theme_classic()
 
 plotly::ggplotly(Fig8)
 
 Fig9 <- ggplot(hane_dbh,
-               aes(x = Year, y = DBH, fill = Family)) +
+               aes(x = Year, y = DBH, fill = Family, color = Family)) +
   stat_summary(fun.data = mean_sd, geom = "errorbar", position = position_dodge(0.9), width = 0.2, color = "grey") +
   stat_summary(fun = mean, geom = "bar", position = "dodge") +
   font("title", size = 22) +
@@ -504,6 +467,7 @@ Fig9 <- ggplot(hane_dbh,
                      "d", "cd", "bcd", "bc", "b", "a",
                      "b", "b", "b", "b", "b", "a"
            )) +
+  guides(fill = "none") +
   theme_classic()
 
 plotly::ggplotly(Fig9)
@@ -515,7 +479,7 @@ plotly::ggplotly(Fig9)
 ```{r, echo = TRUE}
 
 Fig10 <- ggplot(hane_crown,
-                aes(x = Family, y = Crown, fill = Family)) +
+                aes(x = Family, y = Crown, fill = Family, color = Family)) +
   stat_summary(fun.data = mean_sd, geom = "errorbar", width = 0.2, color = "grey") +
   stat_summary(fun = mean, geom = "bar") +
   font("title", size = 22) +
@@ -532,12 +496,13 @@ Fig10 <- ggplot(hane_crown,
            x = c(1, 2, 3, 4, 5, 6),
            y = c(8),
            label = c("b", "b", "a", "a", "a", "a")) +
+  guides(fill = "none") +
   theme_classic()
 
 plotly::ggplotly(Fig10)
 
 Fig11 <- ggplot(hane_crown,
-               aes(x = Year, y = Crown, fill = Location)) +
+               aes(x = Year, y = Crown, fill = Location, color = Location)) +
   stat_summary(fun.data = mean_sd, geom = "errorbar", position = position_dodge(0.9), width = 0.2, color = "grey") +
   stat_summary(fun = mean, geom = "bar", position = "dodge") +
   font("title", size = 22) +
@@ -553,12 +518,13 @@ Fig11 <- ggplot(hane_crown,
            x = c(0.78, 1.22, 1.78, 2.22, 2.78, 3.22),
            y = c(3.2, 1.7, 6.5, 4, 7.3, 5),
            label = c("a", "b", "a", "b", "a", "b")) +
+  guides(fill = "none") +
   theme_classic()
 
 plotly::ggplotly(Fig11)
 
 Fig12 <- ggplot(hane_crown,
-               aes(x = Year, y = Crown, fill = Family)) +
+               aes(x = Year, y = Crown, fill = Family, color = Family)) +
   stat_summary(fun.data = mean_sd, geom = "errorbar", position = position_dodge(0.9), width = 0.2, color = "grey") +
   stat_summary(fun = mean, geom = "bar", position = "dodge") +
   font("title", size = 22) +
@@ -581,6 +547,7 @@ Fig12 <- ggplot(hane_crown,
            label = c("b", "b", "a", "a", "a", "a",
                      "b", "b", "a", "a", "a", "a"
            )) +
+  guides(fill = "none") +
   theme_classic()
 
 plotly::ggplotly(Fig12)
