@@ -5,33 +5,39 @@ knit: (function(input_file, encoding) {
     out_dir <- 'docs';
     rmarkdown::render(input_file,
       encoding = encoding,
-      output_file=file.path(dirname(input_file), out_dir, 'index.html'))})
+      output_file = file.path(dirname(input_file), out_dir, 'index.html'))})
 
 author: "Andrea De Stefano"
 date: "2023-12-01"
 output: html_document
 ---
 
+
 ```{r setup, include = FALSE}
+
 knitr::opts_chunk$set(echo = TRUE, fig.width = 10, fig.height = 8, fig.align = "left")
+
 ```
 # General info {.tabset}
 
 I created this website to track the progress with the sweetgum genetic study.
 
-There are 7 parts:
+All is contained in the following tabs:
 
-1. Libraries, dataset loading, and data wrangling.
-2. SAS code.
-3. Survival rate plots.
-4. Groundline diameter (GLD) plots and stats.
-5. Tree height plots and stats.
-6. DBH plots and stats.
-7. Live crown height plots and stats.
+1. Groundline diameter (GLD) SAS code and output.
+2. Tree height SAS code and output.
+3. DBH SAS code and output.
+4. Crown height SAS code and output.
+5. Survival rate plots.
+6. GLD plots and stats.
+7. Tree height plots and stats.
+8. DBH plots and stats.
+9. Live crown height plots and stats.
 
-## Data Wrangling {.tabset}
+External trees were removed from the analysis and all the Variables were averaged at plot level. A unique ID was created for each tree combining Genotype, Location, and Block (GLD in the SAS code).
 
-```{r, echo = TRUE}
+
+```{r, echo = F, warning = F, include = F}
 
 library(tidyverse)
 library(ggpubr)
@@ -83,103 +89,111 @@ hane_survival_year_location_family <- hane_survival_year_location_family %>%
 
 ```
 
-## SAS Code {.tabset}
 
-Procedure:
+## GLD SAS {.tabset}
 
-External trees were removed from the analysis and all the Variables were averaged at plot level.
-A unique ID was created combining Genotype, Location, and Block (GLD in the SAS code)
+**CODE:** \
+ \
+PROC GLIMMIX DATA = GLD; \
+CLASS Year Location Block Family GLB; \
+MODEL GLD = Year|Location|Family / DDFM = KR; \
+RANDOM intercept / SUBJECT = GLB TYPE = AR(1); \
+LSMEANS Family / ADJUST = TUKEY LINES; \
+SLICE Year * Location / SLICEBY = Year ADJUST = TUKEY LINES; \
+SLICE Year * Family / SLICEBY = Year ADJUST = TUKEY LINES; \
+ODS GRAPHICS OFF; \
+RUN; \
 
-Datasets used:
 
-1. WORK.DBH for DBH
-2. WORK.GLD for GLD
-3. WORK.HEIGHT for tree height
-4. WORK.CROWN for crown height
+**OUTPUT:** \
 
-Here are the SAS models:
+```{r, echo = F, warning = T}
 
-1. GLD
-
-PROC GLIMMIX DATA = GLD H PLOTS = ALL;
-CLASS Year Location Block Family GLB;
-MODEL GLD = Year|Location|Family / SOLUTION DDFM = KR;
-RANDOM intercept / SOLUTION SUBJECT = GLB TYPE = AR(1) CL;
-LSMEANS Location Family Year * Location Year * Family/ ADJUST = TUKEY LINES;
-ODS GRAPHICS OFF;
-RUN;
-
-2. Height
-
-PROC GLIMMIX DATA = HEIGHT H PLOTS = ALL;
-CLASS Year Location Block Family GLB;
-MODEL Height = Year|Location|Family / SOLUTION DDFM = KR;
-RANDOM intercept / SOLUTION SUBJECT = GLB TYPE = AR(1) CL;
-LSMEANS Family/ ADJUST = TUKEY LINES;
-SLICE Year * Location / SLICEBY = Year ADJUST = TUKEY LINES DIFF;
-SLICE Year * Family / SLICEBY = Year ADJUST = TUKEY LINES DIFF;
-ODS GRAPHICS OFF;
-RUN;
-
-3. DBH
-
-PROC GLIMMIX DATA = DBH H PLOTS = ALL;
-CLASS Year Location Block Family GLB;
-MODEL DBH = Year|Location|Family / SOLUTION DDFM = KR;
-RANDOM intercept / SOLUTION SUBJECT = GLB TYPE = AR(1) CL;
-LSMEANS Family/ ADJUST = TUKEY LINES;
-SLICE Year * Location / SLICEBY = Year ADJUST = TUKEY LINES DIFF;
-SLICE Year * Family / SLICEBY = Year ADJUST = TUKEY LINES DIFF;
-ODS GRAPHICS OFF;
-RUN;
-
-4. Crown Height
-
-PROC GLIMMIX DATA = CROWN H PLOTS = ALL;
-CLASS Year Location Block Family GLB;
-MODEL CROWN = Year|Location|Family / SOLUTION DDFM = KR;
-RANDOM intercept / SOLUTION SUBJECT = GLB TYPE = AR(1) CL;
-LSMEANS Family/ ADJUST = TUKEY LINES;
-SLICE Year * Location / SLICEBY = Year ADJUST = TUKEY LINES DIFF;
-SLICE Year * Family / SLICEBY = Year ADJUST = TUKEY LINES DIFF;
-ODS GRAPHICS OFF;
-RUN;
-
-## SAS Output GLD {.tabset}
-
-```{r, echo = TRUE}
-
-htmltools::includeHTML("https://raw.githubusercontent.com/azd169/SAS_outputs/main/hane-results-GLD.html")
+htmltools::tags$iframe(
+  src = base64enc::dataURI(file = "https://raw.githubusercontent.com/azd169/SAS_outputs/main/hane-results-GLD.html",
+                           mime = "text/html; charset = UTF-8"),
+  style = "border:0; position:relative; top:0; left:0; right:0; bottom:0; width:100%; height:3000px")
 
 ```
 
-## SAS Output DBH {.tabset}
+## Height SAS {.tabset}
 
-```{r, echo = TRUE}
+**CODE: ** \
+ \
+PROC GLIMMIX DATA = HEIGHT; \
+CLASS Year Location Block Family GLB; \
+MODEL Height = Year|Location|Family / DDFM = KR; \
+RANDOM intercept / SUBJECT = GLB TYPE = AR(1); \
+LSMEANS Family / ADJUST = TUKEY LINES; \
+SLICE Year * Location / SLICEBY = Year ADJUST = TUKEY LINES; \
+SLICE Year * Family / SLICEBY = Year ADJUST = TUKEY LINES; \
+ODS GRAPHICS OFF; \
+RUN; \
 
-htmltools::includeHTML("https://raw.githubusercontent.com/azd169/SAS_outputs/main/hane-results-DBH.html")
+**OUTPUT: **
+
+```{r, echo = F, warning = F}
+
+htmltools::tags$iframe(
+  src = base64enc::dataURI(file = "https://raw.githubusercontent.com/azd169/SAS_outputs/main/hane-results-height.html",
+                           mime = "text/html; charset = UTF-8"),
+  style = "border:0; position:relative; top:0; left:0; right:0; bottom:0; width:100%; height:3000px")
 
 ```
 
-## SAS Output Height {.tabset}
+## DBH SAS {.tabset}
 
-```{r, echo = TRUE}
+**CODE: ** \
+ \
+PROC GLIMMIX DATA = DBH; \
+CLASS Year Location Block Family GLB; \
+MODEL DBH = Year|Location|Family / DDFM = KR; \
+RANDOM intercept / SUBJECT = GLB TYPE = AR(1); \
+LSMEANS Family / ADJUST = TUKEY LINES; \
+SLICE Year * Location / SLICEBY = Year ADJUST = TUKEY LINES; \
+SLICE Year * Family / SLICEBY = Year ADJUST = TUKEY LINES; \
+ODS GRAPHICS OFF; \
+RUN; \
 
-htmltools::includeHTML("https://raw.githubusercontent.com/azd169/SAS_outputs/main/hane-results-height.html")
+**OUTPUT: **
+
+```{r, echo = F, warning = F}
+
+htmltools::tags$iframe(
+  src = base64enc::dataURI(file = "https://raw.githubusercontent.com/azd169/SAS_outputs/main/hane-results-DBH.html",
+                           mime = "text/html; charset = UTF-8"),
+  style = "border:0; position:relative; top:0; left:0; right:0; bottom:0; width:100%; height:3000px")
 
 ```
 
-## SAS Output Crown {.tabset}
+## Crown SAS {.tabset}
 
-```{r, echo = TRUE}
+**CODE: ** \
+ \
+PROC GLIMMIX DATA = CROWN; \
+CLASS Year Location Block Family GLB; \
+MODEL Crown = Year|Location|Family / DDFM = KR; \
+RANDOM intercept / SUBJECT = GLB TYPE = AR(1); \
+LSMEANS Family / ADJUST = TUKEY LINES; \
+SLICE Year * Location / SLICEBY = Year ADJUST = TUKEY LINES; \
+SLICE Year * Family / SLICEBY = Year ADJUST = TUKEY LINES; \
+ODS GRAPHICS OFF; \
+RUN; \
 
-htmltools::includeHTML("https://raw.githubusercontent.com/azd169/SAS_outputs/main/hane-results-crown.html")
+**OUTPUT: **
+
+```{r, echo = F, warning = F}
+
+htmltools::tags$iframe(
+  src = base64enc::dataURI(file = "https://raw.githubusercontent.com/azd169/SAS_outputs/main/hane-results-crown.html",
+                           mime = "text/html; charset = UTF-8"),
+  style = "border:0; position:relative; top:0; left:0; right:0; bottom:0; width:100%; height:3000px")
 
 ```
 
 ## Survival rates {.tabset}
 
-```{r, echo = TRUE}
+```{r, echo = F, warning = F}
 
 Sur1 <- ggplot(hane_survival_year,
                aes(x = Survival, y = Rate, fill = Survival, Color = Survival)) +
@@ -190,6 +204,7 @@ Sur1 <- ggplot(hane_survival_year,
   font("xy.text", size = 16) +
   scale_y_continuous(limits = c(0, 100), breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100), expand = c(0,0)) +
   scale_fill_manual(values = alpha(c("green4", "red3"), 0.5)) +
+  scale_color_manual(values = alpha(c("green4", "red3"), 0.5)) +
   labs(title = "Survival Rate by Growing Season") +
   xlab("") +
   ylab("Survival rate (%)") +
@@ -208,6 +223,7 @@ Sur2 <- ggplot(hane_survival_year_family,
   font("xy.text", size = 16) +
   scale_y_continuous(limits = c(0, 100), breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100), expand = c(0,0)) +
   scale_fill_manual(values = alpha(c("green4", "red3"), 0.5)) +
+  scale_color_manual(values = alpha(c("green4", "red3"), 0.5)) +
   labs(title = "Survival Rate by Growing Season and Family") +
   xlab("") +
   ylab("Survival rate (%)") +
@@ -226,6 +242,7 @@ Sur3 <- ggplot(hane_survival_year_location,
   font("xy.text", size = 16) +
   scale_y_continuous(limits = c(0, 100), breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100), expand = c(0,0)) +
   scale_fill_manual(values = alpha(c("green4", "red3"), 0.5)) +
+  scale_color_manual(values = alpha(c("green4", "red3"), 0.5)) +
   labs(title = "Survival Rate by Growing Season and Location") +
   xlab("") +
   ylab("Survival rate (%)") +
@@ -244,6 +261,7 @@ Sur4 <- ggplot(hane_survival_year_location_family,
   font("xy.text", size = 16) +
   scale_y_continuous(limits = c(0, 100), breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100), expand = c(0,0)) +
   scale_fill_manual(values = alpha(c("green4", "red3"), 0.5)) +
+  scale_color_manual(values = alpha(c("green4", "red3"), 0.5)) +
   labs(title = "Survival Rate by Growing Season, Location, and Family") +
   xlab("") +
   ylab("Survival rate (%)") +
@@ -257,7 +275,7 @@ plotly::ggplotly(Sur4)
 
 ## GLD {.tabset}
 
-```{r, echo = TRUE}
+```{r, echo = F, warning = F}
 
 Fig1 <- ggplot(hane_gld,
                  aes(x = Family, y = GLD, fill = Family, color = Family)) +
@@ -270,12 +288,14 @@ Fig1 <- ggplot(hane_gld,
   scale_y_continuous(limits = c(0, 60), breaks = c(0, 10, 20, 30, 40, 50, 60), expand = c(0,0)) +
   scale_fill_manual(values = alpha(c("#E69F00", "#56B4E9", "#009E73",
                                      "#F0E442", "#D55E00", "#CC79A7"), 0.5)) +
+  scale_color_manual(values = alpha(c("#E69F00", "#56B4E9", "#009E73",
+                                     "#F0E442", "#D55E00", "#CC79A7"), 0.5)) +
   labs(title = "GLD: Family Effect") +
   xlab("Family") +
   ylab("GLD (mm)") +
   annotate("text",
            x = c(1, 2, 3, 4, 5, 6),
-           y = c(50),
+           y = c(35, 38, 42, 44, 39, 40),
            label = c("b", "ab", "a", "a", "ab", "ab")) +
   guides(fill = "none") +
   theme_classic()
@@ -292,12 +312,13 @@ Fig2 <- ggplot(hane_gld,
   font("xy.text", size = 16) +
   scale_y_continuous(limits = c(0, 70), breaks = c(0, 10, 20, 30, 40, 50, 60, 70), expand = c(0,0)) +
   scale_fill_manual(values = alpha(c("#000000", "#999999"), 0.5)) +
+  scale_color_manual(values = alpha(c("#000000", "#999999"), 0.5)) +
   labs(title = "GLD: Year * Location") +
   xlab("Growing Season") +
   ylab("GLD (mm)") +
   annotate("text",
            x = c(1.78, 2.22, 2.78, 3.22),
-           y = c(20, 20, 55, 50),
+           y = c(20, 20, 50, 55),
            label = c("b", "a", "a", "b")) +
   guides(fill = "none") +
   theme_classic()
@@ -315,6 +336,8 @@ Fig3 <- ggplot(hane_gld,
   scale_y_continuous(limits = c(0, 80), breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 80), expand = c(0,0)) +
   scale_fill_manual(values = alpha(c("#E69F00", "#56B4E9", "#009E73",
                                "#F0E442", "#D55E00", "#CC79A7"), 0.5)) +
+  scale_color_manual(values = alpha(c("#E69F00", "#56B4E9", "#009E73",
+                                     "#F0E442", "#D55E00", "#CC79A7"), 0.5)) +
   labs(title = "GLD: Year * Family") +
   xlab("Growing Season") +
   ylab("GLD (mm)") +
@@ -331,7 +354,7 @@ plotly::ggplotly(Fig3)
 
 ## Height {.tabset}
 
-```{r, echo = TRUE}
+```{r, echo = F, warning = F}
 
 Fig4 <- ggplot(hane_ht,
                aes(x = Family, y = Height, fill = Family, color = Family)) +
@@ -344,12 +367,14 @@ Fig4 <- ggplot(hane_ht,
   scale_y_continuous(limits = c(0, 12), breaks = c(0, 2, 4, 6, 8, 10, 12), expand = c(0,0)) +
   scale_fill_manual(values = alpha(c("#E69F00", "#56B4E9", "#009E73",
                                      "#F0E442", "#D55E00", "#CC79A7"), 0.5)) +
+  scale_color_manual(values = alpha(c("#E69F00", "#56B4E9", "#009E73",
+                                     "#F0E442", "#D55E00", "#CC79A7"), 0.5)) +
   labs(title = "Height: Year * Location") +
   xlab("Family") +
   ylab("Height (m)") +
   annotate("text",
            x = c(1, 2, 3, 4, 5, 6),
-           y = c(10),
+           y = c(7, 7.5, 8.6, 8.7, 7.7, 8),
            label = c("d", "cd", "a", "a", "bc", "ab")) +
   guides(fill = "none") +
   theme_classic()
@@ -366,12 +391,13 @@ Fig5 <- ggplot(hane_ht,
   font("xy.text", size = 16) +
   scale_y_continuous(limits = c(0, 12), breaks = c(0, 2, 4, 6, 8, 10, 12), expand = c(0,0)) +
   scale_fill_manual(values = alpha(c("#000000", "#999999"), 0.5)) +
+  scale_color_manual(values = alpha(c("#000000", "#999999"), 0.5)) +
   labs(title = "Height: Year * Location" ) +
   xlab("Growing Season") +
   ylab("Height (m)") +
   annotate("text",
            x = c(3.78, 4.22, 4.78, 5.22, 5.78, 6.22, 6.78, 7.22),
-           y = c(5, 4, 7, 5.5, 8.5, 7.5, 11, 7.5),
+           y = c(4, 5, 5.5, 7, 7.5, 8.5, 7.5, 11),
            label = c("a", "b", "a", "b", "a", "b", "a", "b")) +
   theme_classic()
 
@@ -387,6 +413,8 @@ Fig6 <- ggplot(hane_ht,
   font("xy.text", size = 16) +
   scale_y_continuous(limits = c(0, 12), breaks = c(0, 2, 4, 6, 8, 10, 12), expand = c(0,0)) +
   scale_fill_manual(values = alpha(c("#E69F00", "#56B4E9", "#009E73",
+                                     "#F0E442", "#D55E00", "#CC79A7"), 0.5)) +
+  scale_color_manual(values = alpha(c("#E69F00", "#56B4E9", "#009E73",
                                      "#F0E442", "#D55E00", "#CC79A7"), 0.5)) +
   labs(title = "Height: Year * Family") +
   xlab("Growing Season") +
@@ -421,7 +449,7 @@ plotly::ggplotly(Fig6)
 
 ## DBH {.tabset}
 
-```{r, echo = TRUE}
+```{r, echo = F, warning = F}
 
 Fig7 <- ggplot(hane_dbh,
                aes(x = Family, y = DBH, fill = Family, color = Family)) +
@@ -434,12 +462,14 @@ Fig7 <- ggplot(hane_dbh,
   scale_y_continuous(limits = c(0, 20), breaks = c(0, 5, 10, 15, 20), expand = c(0,0)) +
   scale_fill_manual(values = alpha(c("#E69F00", "#56B4E9", "#009E73",
                                      "#F0E442", "#D55E00", "#CC79A7"), 0.5)) +
+  scale_color_manual(values = alpha(c("#E69F00", "#56B4E9", "#009E73",
+                                     "#F0E442", "#D55E00", "#CC79A7"), 0.5)) +
   labs(title = "DBH: Family Effect") +
   xlab("Family") +
   ylab("DBH (cm)") +
   annotate("text",
            x = c(1, 2, 3, 4, 5, 6),
-           y = c(15),
+           y = c(11, 11.1, 11.5, 11.8, 12, 14),
            label = c("d", "cd", "b", "b", "cb", "a")) +
   theme_classic()
 
@@ -455,12 +485,13 @@ Fig8 <- ggplot(hane_dbh,
   font("xy.text", size = 16) +
   scale_y_continuous(limits = c(0, 20), breaks = c(0, 5, 10, 15, 20), expand = c(0,0)) +
   scale_fill_manual(values = alpha(c("#000000", "#999999"), 0.5)) +
+  scale_color_manual(values = alpha(c("#000000", "#999999"), 0.5)) +
   labs(title = "DBH: Year * Location" ) +
   xlab("Growing Season") +
   ylab("DBH (cm)") +
   annotate("text",
            x = c(0.78, 1.22, 1.78, 2.22, 2.78, 3.22, 3.78, 4.22, 4.78, 5.22),
-           y = c(5, 4, 8, 7, 11, 10, 13, 12, 14, 13),
+           y = c(4, 5, 7, 8, 10, 11, 12, 13, 13, 14),
            label = c("a", "b", "a", "b", "a", "b", "a", "b", "a", "b")) +
   guides(fill = "none") +
   theme_classic()
@@ -477,6 +508,8 @@ Fig9 <- ggplot(hane_dbh,
   font("xy.text", size = 16) +
   scale_y_continuous(limits = c(0, 20), breaks = c(0, 5, 10, 15, 20), expand = c(0,0)) +
   scale_fill_manual(values = alpha(c("#E69F00", "#56B4E9", "#009E73",
+                                     "#F0E442", "#D55E00", "#CC79A7"), 0.5)) +
+  scale_color_manual(values = alpha(c("#E69F00", "#56B4E9", "#009E73",
                                      "#F0E442", "#D55E00", "#CC79A7"), 0.5)) +
   labs(title = "DBH: Year * Family") +
   xlab("Growing Season") +
@@ -509,7 +542,7 @@ plotly::ggplotly(Fig9)
 
 ## Crown {.tabset}
 
-```{r, echo = TRUE}
+```{r, echo = F, warning = F}
 
 Fig10 <- ggplot(hane_crown,
                 aes(x = Family, y = Crown, fill = Family, color = Family)) +
@@ -522,12 +555,14 @@ Fig10 <- ggplot(hane_crown,
   scale_y_continuous(limits = c(0, 10), breaks = c(0, 2, 4, 6, 8, 10), expand = c(0,0)) +
   scale_fill_manual(values = alpha(c("#E69F00", "#56B4E9", "#009E73",
                                      "#F0E442", "#D55E00", "#CC79A7"), 0.5)) +
+  scale_color_manual(values = alpha(c("#E69F00", "#56B4E9", "#009E73",
+                                     "#F0E442", "#D55E00", "#CC79A7"), 0.5)) +
   labs(title = "Crown Height: Family Effect") +
   xlab("Family") +
   ylab("Crown Height (m)") +
   annotate("text",
            x = c(1, 2, 3, 4, 5, 6),
-           y = c(8),
+           y = c(3, 3, 6, 6.5, 5, 5.5),
            label = c("b", "b", "a", "a", "a", "a")) +
   guides(fill = "none") +
   theme_classic()
@@ -544,12 +579,13 @@ Fig11 <- ggplot(hane_crown,
   font("xy.text", size = 16) +
   scale_y_continuous(limits = c(0, 10), breaks = c(0, 2, 4, 6, 8, 10), expand = c(0,0)) +
   scale_fill_manual(values = alpha(c("#000000", "#999999"), 0.5)) +
+  scale_color_manual(values = alpha(c("#000000", "#999999"), 0.5)) +
   labs(title = "Crown Height: Year * Location" ) +
   xlab("Growing Season") +
   ylab("Crown Height (m)") +
   annotate("text",
            x = c(0.78, 1.22, 1.78, 2.22, 2.78, 3.22),
-           y = c(3.2, 1.7, 6.5, 4, 7.3, 5),
+           y = c(1.7, 3.2, 4, 6.5, 5, 7.3),
            label = c("a", "b", "a", "b", "a", "b")) +
   guides(fill = "none") +
   theme_classic()
@@ -566,6 +602,8 @@ Fig12 <- ggplot(hane_crown,
   font("xy.text", size = 16) +
   scale_y_continuous(limits = c(0, 10), breaks = c(0, 2, 4, 6, 8, 10), expand = c(0,0)) +
   scale_fill_manual(values = alpha(c("#E69F00", "#56B4E9", "#009E73",
+                                     "#F0E442", "#D55E00", "#CC79A7"), 0.5)) +
+  scale_color_manual(values = alpha(c("#E69F00", "#56B4E9", "#009E73",
                                      "#F0E442", "#D55E00", "#CC79A7"), 0.5)) +
   labs(title = "Crown Height: Year * Family") +
   xlab("Growing Season") +
