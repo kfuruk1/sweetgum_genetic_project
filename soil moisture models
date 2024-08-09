@@ -1,0 +1,59 @@
+> anova(mod_sm)
+                     numDF denDF   F-value p-value
+(Intercept)              1   108 1541.7384  <.0001
+Time                     2   108  358.5994  <.0001
+Location                 1   108   43.3447  <.0001
+Family                   5   108    2.6220  0.0281
+Time:Location            2   108   61.0064  <.0001
+Time:Family             10   108    1.0937  0.3735
+Location:Family          5   108    4.7615  0.0006
+Time:Location:Family    10   108    1.7217  0.0848
+
+#sm time: sig
+> print(cld_sm_time)
+ contrast            estimate    SE  df t.ratio p.value .group
+ Early Summer effect     3.39 0.182 108  18.580  <.0001  a    
+ Mid Summer effect       1.35 0.182 108   7.414  <.0001   b   
+ Late Summer effect     -4.74 0.182 108 -25.993  <.0001    c  
+
+ > print(means_sm_time)
+# A tibble: 3 × 4
+  Time         `Mean Soil Moisture` `SE Moisture`     N
+  <fct>                       <dbl>         <dbl> <int>
+1 Early Summer                8.45          0.533    48
+2 Mid Summer                  6.41          0.238    48
+3 Late Summer                 0.323         0.136    48
+
+#sm loc: sig
+> print(cld_sm_loc)
+ contrast         estimate    SE  df t.ratio p.value .group
+ LA Tech effect      0.849 0.129 108   6.584  <.0001  a    
+ Hill Farm effect   -0.849 0.129 108  -6.584  <.0001   b   
+
+> print(means_sm_loc)
+# A tibble: 2 × 4
+  Location  `Mean Soil Moisture` `SE Moisture`     N
+  <chr>                    <dbl>         <dbl> <int>
+1 Hill Farm                 4.21         0.383    72
+2 LA Tech                   5.91         0.572    72
+
+#sm fam: sig
+> print(cld_sm_fam)
+ contrast     estimate    SE  df t.ratio p.value .group
+ AGHS4 effect   0.8931 0.288 108   3.099  0.0148  a    
+ AGHS3 effect   0.2347 0.288 108   0.814  0.9608  ab   
+ AGHS1 effect  -0.0111 0.288 108  -0.039  1.0000  ab   
+ AGH2 effect   -0.2819 0.288 108  -0.978  0.9097  ab   
+ AGHS2 effect  -0.3028 0.288 108  -1.051  0.8781  ab   
+ AGH25 effect  -0.5319 0.288 108  -1.846  0.3433   b   
+
+> print(means_sm_fam)
+# A tibble: 6 × 4
+  Family `Mean Soil Moisture` `SE Moisture`     N
+  <chr>                 <dbl>         <dbl> <int>
+1 AGH2                   4.78         0.871    24
+2 AGH25                  4.53         0.783    24
+3 AGHS1                  5.05         0.798    24
+4 AGHS2                  4.76         0.729    24
+5 AGHS3                  5.30         0.963    24
+6 AGHS4                  5.95         1.03     24
